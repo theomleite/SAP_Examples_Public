@@ -4,6 +4,17 @@
 *& References:
 *& https://community.sap.com/t5/application-development-blog-posts/editable-cl-salv-table-after-release-756/ba-p/13532780
 *& https://codezentrale.de/abap-editierbares-salv-grid-if_salv_gui_om_extend_grid_api-if_salv_gui_om_edit_restricted/
+*&
+*& After creating the table ZS4_EXAMPLE_MAKT, run the below code for initial data
+*&
+*&     SELECT * UP TO 10 ROWS
+*&       FROM makt
+*&       INTO TABLE data(gt_outtab)
+*&       WHERE spras EQ sy-langu.
+*&
+*&     IF sy-subrc IS INITIAL.
+*&       MODIFY  zs4_example_makt FROM TABLE gt_outtab.
+*&     ENDIF.
 *&---------------------------------------------------------------------*
 REPORT zs4_cl_salv_table_example.
 

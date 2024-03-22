@@ -1,0 +1,14 @@
+@EndUserText.label : 'Tabela para exemplo de CL_SALV_TABLE em S4'
+@AbapCatalog.enhancement.category : #EXTENSIBLE_CHARACTER
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zs4_example_makt {
+  key mandt : mandt not null;
+  key matnr : matnr not null;
+  @AbapCatalog.textLanguage
+  key spras : spras not null;
+  maktx     : maktx;
+  maktg     : maktg;
+
+}

@@ -1,0 +1,86 @@
+*&---------------------------------------------------------------------*
+*& INCLUDE zs4_cl_salv_table_example_top
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+*** GLOBAL VARIABELS
+DATA: gv_edit TYPE abap_bool.
+
+*** GLOBAL ITABS
+DATA: gt_outtab TYPE TABLE OF zs4_example_makt.
+
+CLASS lcl_events DEFINITION.
+  PUBLIC SECTION.
+*** CONSTANTS for the buttons
+    CONSTANTS: co_btn_edit TYPE string VALUE 'BTN_EDIT'.
+    CONSTANTS: co_btn_save TYPE string VALUE 'BTN_SAVE'.
+
+*** Reference for SALV-Grid
+    CLASS-DATA: o_salv TYPE REF TO cl_salv_table.
+
+*   Method for handling SALV-Grid toolbar events
+    CLASS-METHODS : on_toolbar_click FOR EVENT added_function OF cl_salv_events_table
+      IMPORTING
+        e_salv_function
+        sender.
+  PRIVATE SECTION.
+*   SALV-Grid Editable Status Controller
+    CLASS-DATA: gv_edit TYPE abap_bool VALUE abap_false.
+ENDCLASS. "lcl_events DEFINITION
+
+CLASS lcl_events IMPLEMENTATION.
+  METHOD on_toolbar_click.
+    IF o_salv IS BOUND.
+
+      DATA(lo_api)  = o_salv->extended_grid_api( ).
+      DATA(lo_edit) = lo_api->editable_restricted( ).
+
+      CASE e_salv_function.
+
+        WHEN co_btn_edit.
+
+*   Alternate Editable mode
+          IF gv_edit EQ abap_false.
+            gv_edit = abap_true.
+          ELSE.
+            gv_edit = abap_false.
+          ENDIF. "gv_edit EQ abap_false.
+
+          TRY.
+*   Set columns as editable
+              lo_edit->set_attributes_for_columnname( EXPORTING columnname              = 'MAKTX'
+                                                               all_cells_input_enabled = gv_edit ).
+
+              lo_edit->set_attributes_for_columnname( EXPORTING columnname              = 'MAKTG'
+                                                               all_cells_input_enabled = gv_edit ).
+            CATCH cx_salv_not_found.
+          ENDTRY.
+
+*   Register the changes into the Grid ITAB ( GT_OUTTAB )
+          lo_edit->validate_changed_data( ).
+*   Refresh Grid
+          o_salv->refresh( ).
+
+        WHEN co_btn_save.
+
+          TRY.
+*   Check that the data entered is valid
+*** This is for standard checks, for example: If the user entered text in a numeric field ***
+              lo_edit->validate_changed_data( IMPORTING
+                      is_input_data_valid = DATA(lf_changed_data) ).
+              o_salv->refresh( ).
+            CATCH cx_salv_not_found.
+          ENDTRY.
+
+          IF lf_changed_data EQ abap_true.
+*   If the data is valid, we store the information
+            MODIFY zs4_example_makt FROM TABLE gt_outtab.
+          ELSE.
+            MESSAGE i208(00) WITH 'Não houve nenhuma alteração nos dados'.
+          ENDIF. "lf_changed_data EQ abap_true.
+
+      ENDCASE. "e_salv_function
+    ENDIF. "o_salv IS BOUND
+  ENDMETHOD. "on_toolbar_click
+ENDCLASS. "lcl_events IMPLEMENTATION

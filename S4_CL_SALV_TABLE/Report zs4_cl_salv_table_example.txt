@@ -1,0 +1,72 @@
+*&---------------------------------------------------------------------*
+*& Report zs4_cl_salv_table_example
+*&---------------------------------------------------------------------*
+*& References:
+*& https://community.sap.com/t5/application-development-blog-posts/editable-cl-salv-table-after-release-756/ba-p/13532780
+*& https://codezentrale.de/abap-editierbares-salv-grid-if_salv_gui_om_extend_grid_api-if_salv_gui_om_edit_restricted/
+*&---------------------------------------------------------------------*
+REPORT zs4_cl_salv_table_example.
+
+INCLUDE zs4_cl_salv_table_example_top.
+
+START-OF-SELECTION.
+
+  TRY.
+*   Select data
+      SELECT * UP TO 10 ROWS
+        FROM zs4_example_makt
+        INTO TABLE gt_outtab
+        WHERE spras EQ sy-langu.
+
+      IF sy-subrc IS INITIAL.
+        TRY.
+*   Create instance
+            cl_salv_table=>factory( EXPORTING r_container  = cl_gui_container=>default_screen "Required to add buttons
+                                    IMPORTING r_salv_table = lcl_events=>o_salv
+                                    CHANGING  t_table      = gt_outtab ).
+
+          CATCH cx_salv_msg INTO DATA(lo_err).
+            MESSAGE ID lo_err->msgid
+                  TYPE lo_err->msgty
+                NUMBER lo_err->msgno
+                  WITH lo_err->msgv1 lo_err->msgv1 lo_err->msgv1 lo_err->msgv1.
+            RETURN.
+        ENDTRY.
+
+*   Hide standard SALV-Table buttons
+        lcl_events=>o_salv->get_functions( )->set_all( abap_false ).
+
+*   Add personalized SALV buttons
+*** Add button only works if the SALV-Table is embedded in a container (e.g. cl_gui_container=>default_screen). ***
+        lcl_events=>o_salv->get_functions( )->add_function( name = |{ lcl_events=>co_btn_edit }|
+                                                            icon = |{ icon_edit_file }|
+                                                            text = 'Alterar'
+                                                            tooltip = 'Alterar Dados'
+                                                            position = if_salv_c_function_position=>right_of_salv_functions ).
+
+        lcl_events=>o_salv->get_functions( )->add_function( name = |{ lcl_events=>co_btn_save }|
+                                                            icon = |{ icon_save_as_template }|
+                                                            text = 'Gravar'
+                                                            tooltip = 'Gravar Dados'
+                                                            position = if_salv_c_function_position=>right_of_salv_functions ).
+
+*   Define event handler for actions on the SALV-Grid toolbar
+        SET HANDLER lcl_events=>on_toolbar_click FOR lcl_events=>o_salv->get_event( ).
+
+*   Display the SALV report
+        lcl_events=>o_salv->display( ).
+
+*   Suppress the toolbar
+        cl_abap_list_layout=>suppress_toolbar( ).
+
+*   Force exit list for creation of cl_gui_container=>default_screen
+        WRITE: space.
+
+      ELSE.
+        MESSAGE i208(00) WITH 'Não há dados!'.
+      ENDIF. "SELECT zs4_example_makt
+
+    CATCH cx_root INTO DATA(le_txt).
+*   If an untreated error occurs, it displays the message
+      WRITE: / le_txt->get_text( ).
+  ENDTRY.
